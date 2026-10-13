@@ -18,6 +18,60 @@ The checked-in configuration uses:
 Review mode requires human approval before the agent performs operational
 changes.
 
+## Architecture
+
+```mermaid
+flowchart TB
+    operator["SRE / Operator"]
+    github["GitHub<br/>KrishnaDistributedcomputing/sre-agents"]
+    pipeline["PowerShell / azd<br/>Bicep deployment"]
+
+    subgraph azure["Azure subscription: MCAPS-Hybrid-REQ-154436-2026-kvenk"]
+        subgraph agentRg["rg-sre-agents-centralus"]
+            agent["Azure SRE Agent<br/>sre-agents"]
+            identity["Managed identity"]
+            telemetry["Agent telemetry<br/>Application Insights + Log Analytics"]
+
+            subgraph capabilities["Agent configuration"]
+                skills["Skills<br/>Alert investigation<br/>Application error triage"]
+                subagents["Subagents<br/>Alert investigator<br/>Remediation advisor"]
+                automation["Automation<br/>Daily health check<br/>Sev0/Sev1 response plan"]
+                guardrails["Safety hooks<br/>Approve restarts and scaling<br/>Deny production deletes"]
+            end
+        end
+
+        subgraph targetRg["rg-sre-agent-showcase-centralus"]
+            workloads["Monitored Azure workloads"]
+            appInsights["Application Insights<br/>appi-sre-demowus2"]
+            logAnalytics["Log Analytics<br/>log-sre-demowus2"]
+            azureMonitor["Azure Monitor<br/>Alerts and incidents"]
+        end
+    end
+
+    operator -->|"Deploy and update"| pipeline
+    pipeline -->|"Provision infrastructure"| agentRg
+    github -->|"Source configuration"| pipeline
+    github <-->|"Repository context"| agent
+
+    agent --> identity
+    agent --> telemetry
+    agent --> capabilities
+    identity -->|"Read and monitor through Azure RBAC"| targetRg
+
+    workloads --> appInsights
+    workloads --> logAnalytics
+    appInsights -->|"Telemetry"| agent
+    logAnalytics -->|"Logs and queries"| agent
+    azureMonitor -->|"Sev0 / Sev1 incidents"| automation
+
+    automation --> subagents
+    subagents --> skills
+    skills -->|"Investigation and proposed remediation"| agent
+    agent -->|"Review-mode recommendation"| operator
+    operator -->|"Approve governed actions"| guardrails
+    guardrails -->|"Approved Azure action"| workloads
+```
+
 ## 1. Install prerequisites
 
 Install these tools on Windows:
