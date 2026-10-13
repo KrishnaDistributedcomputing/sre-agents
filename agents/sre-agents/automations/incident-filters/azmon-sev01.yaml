@@ -8,5 +8,4 @@ spec:
   - Sev1
   handlingAgent: alert-investigator
   agentMode: Autonomous
-  deepInvestigationEnabled: false
   maxAutomatedInvestigationAttempts: 3
