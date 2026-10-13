@@ -1,0 +1,14 @@
+{
+  "toggles": {
+    "enableAppInsightsConnector": true,
+    "appInsightsResourceId": "/subscriptions/fa4864b4-3710-453c-bffe-2c22a80cd0f9/resourceGroups/rg-sre-agent-showcase-centralus/providers/Microsoft.Insights/components/appi-sre-demowus2",
+    "appInsightsAppId": "d198836b-f899-48dd-a1fb-28fd59be8878",
+    "enableLogAnalyticsConnector": true,
+    "lawResourceId": "/subscriptions/fa4864b4-3710-453c-bffe-2c22a80cd0f9/resourceGroups/rg-sre-agent-showcase-centralus/providers/Microsoft.OperationalInsights/workspaces/log-sre-demowus2",
+    "enableAzureMonitorConnector": false,
+    "azureMonitorLookbackDays": 7,
+    "grafanaUrl": "",
+    "grafanaApiKey": ""
+  },
+  "connectors": []
+}

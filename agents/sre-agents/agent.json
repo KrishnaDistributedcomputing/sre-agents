@@ -1,0 +1,26 @@
+{
+  "_scenario": "azmon-lawappinsights",
+  "identity": {
+    "agentName": "sre-agents",
+    "resourceGroup": "rg-sre-agents-centralus",
+    "subscription": "fa4864b4-3710-453c-bffe-2c22a80cd0f9",
+    "location": "centralus",
+    "targetResourceGroups": [
+      "rg-sre-agent-showcase-centralus"
+    ]
+  },
+  "access": {
+    "accessLevel": "Low",
+    "actionMode": "Review"
+  },
+  "upgradeChannel": "Preview",
+  "defaultModelProvider": "Anthropic",
+  "monthlyAgentUnitLimit": 10000,
+  "tags": {},
+  "toggles": {
+    "enableWebhookBridge": false,
+    "webhookBridgeTriggerUrl": ""
+  },
+  "existingUamiId": "",
+  "existingAgentAppInsightsId": ""
+}

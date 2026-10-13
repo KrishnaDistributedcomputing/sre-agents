@@ -1,0 +1,197 @@
+{
+  "repos": [
+    {
+      "name": "github-repo",
+      "spec": {
+        "url": "https://github.com/KrishnaDistributedcomputing/sre-agents",
+        "branch": "main",
+        "description": "Connected GitHub repository"
+      }
+    }
+  ],
+  "incidentPlatforms": [
+    {
+      "name": "azure-monitor",
+      "spec": {
+        "platformType": "AzMonitor",
+        "displayName": "Azure Monitor Alerts",
+        "description": "Receives Azure Monitor fired alerts as incidents"
+      }
+    }
+  ],
+  "incidentFilters": [
+    {
+      "metadata": {
+        "name": "azmon-sev01"
+      },
+      "spec": {
+        "incidentPlatform": "AzMonitor",
+        "isEnabled": true,
+        "priorities": [
+          "Sev0",
+          "Sev1"
+        ],
+        "handlingAgent": "alert-investigator",
+        "agentMode": "Autonomous",
+        "deepInvestigationEnabled": false,
+        "maxAutomatedInvestigationAttempts": 3
+      }
+    }
+  ],
+  "scheduledTasks": [
+    {
+      "metadata": {
+        "name": "daily-health-check"
+      },
+      "spec": {
+        "description": "Daily 8am health summary across all monitored resources",
+        "schedule": "0 8 * * *",
+        "prompt": "Summarize the last 24h of incidents, fired alerts, and resource health for all monitored resource groups. Flag anything that needs attention.",
+        "enabled": true,
+        "mode": "Review"
+      }
+    }
+  ],
+  "hooks": [
+    {
+      "name": "deny-prod-deletes",
+      "type": "GlobalHook",
+      "tags": [],
+      "properties": {
+        "eventType": "PreToolUse",
+        "hook": {
+          "type": "prompt",
+          "prompt": "If the tool targets a production resource (name contains 'prod' or 'prd'), deny the action. Otherwise allow.",
+          "matcher": "^(delete_|remove_).*"
+        },
+        "permissionDecision": "deny",
+        "enabled": true
+      }
+    },
+    {
+      "name": "require-approval-for-restarts",
+      "type": "GlobalHook",
+      "tags": [],
+      "properties": {
+        "eventType": "PreToolUse",
+        "hook": {
+          "type": "prompt",
+          "prompt": "If this action will restart or scale a resource, require human approval before proceeding.",
+          "matcher": "^(restart_|scale_).*"
+        },
+        "permissionDecision": "allow",
+        "enabled": true
+      }
+    }
+  ],
+  "commonPrompts": [
+    {
+      "name": "investigation-guidelines",
+      "type": "CommonPrompt",
+      "tags": [],
+      "properties": {
+        "prompt": "## Investigation guidelines\n\n- Always check the last 3 deployments for correlation\n- Include timestamp, affected resource, and severity in all summaries\n- Never take destructive actions without explicit approval\n- Prefer read-only investigation before recommending changes\n- Always provide an impact assessment (users affected, blast radius)"
+      }
+    },
+    {
+      "name": "safety-rules",
+      "type": "CommonPrompt",
+      "tags": [],
+      "properties": {
+        "prompt": "## Safety rules\n\n- Never delete resources in production without explicit approval\n- Always prefer read-only investigation before taking action\n- Escalate to human if confidence is below 80%\n- Do not modify network security groups or firewall rules\n- Do not access or display secrets, keys, or connection strings"
+      }
+    }
+  ],
+  "skills": [
+    {
+      "metadata": {
+        "name": "investigate-azure-alerts",
+        "description": "Investigate fired Azure Monitor alerts â€” correlate with App Insights traces, logs, and metrics to find root cause.",
+        "spec": {
+          "tools": [
+            "RunAzCliReadCommands",
+            "QueryAppInsightsUsingAppId",
+            "QueryLogAnalyticsByWorkspaceId"
+          ]
+        }
+      },
+      "skillContent": "You are investigating a fired Azure Monitor alert. Follow these steps:\n\n1. Read the alert details (severity, resource, condition, fired time)\n2. Query Application Insights for exceptions and failed requests in the same time window\n3. Check Log Analytics for correlated error logs\n4. Look at Azure Monitor metrics for the affected resource (CPU, memory, request rate)\n5. Summarize findings: what happened, when, likely root cause, and recommended action\n",
+      "additionalFiles": []
+    },
+    {
+      "metadata": {
+        "name": "triage-app-errors",
+        "description": "Triage application errors from App Insights â€” group by exception type, identify patterns, and recommend fixes.",
+        "spec": {
+          "tools": [
+            "QueryAppInsightsUsingAppId",
+            "RunAzCliReadCommands"
+          ]
+        }
+      },
+      "skillContent": "You are triaging application errors. Follow these steps:\n\n1. Query App Insights for recent exceptions (last 1 hour)\n2. Group exceptions by type and count\n3. For the top 3 exception types, get stack traces and affected operations\n4. Check if these errors correlate with a recent deployment or config change\n5. Summarize: error patterns, impact, and recommended next steps\n",
+      "additionalFiles": []
+    }
+  ],
+  "subagents": [
+    {
+      "metadata": {
+        "name": "alert-investigator"
+      },
+      "spec": {
+        "instructions": "You are the Alert Investigator. When an Azure Monitor alert fires:\n1. Use the investigate-azure-alerts skill to gather data\n2. If you identify the root cause and it requires remediation, hand off to the Remediation Advisor\n3. If the alert is a false positive or self-resolved, close with a summary\n",
+        "handoffDescription": "Investigates Azure Monitor alerts by correlating App Insights traces, logs, and metrics to identify root cause.",
+        "handoffs": [],
+        "tools": [
+          "RunAzCliReadCommands",
+          "QueryAppInsightsUsingAppId",
+          "QueryLogAnalyticsByWorkspaceId",
+          "SearchMemory"
+        ],
+        "agentType": "Autonomous",
+        "temperature": 0.2,
+        "enableSkills": true,
+        "allowedSkills": [
+          "investigate-azure-alerts"
+        ]
+      }
+    },
+    {
+      "metadata": {
+        "name": "remediation-advisor"
+      },
+      "spec": {
+        "instructions": "You are the Remediation Advisor. When handed off from the Alert Investigator:\n1. Review the investigation findings\n2. Use the triage-app-errors skill if needed for deeper analysis\n3. Recommend specific remediation steps (restart, scale, rollback, config fix)\n4. If the fix requires a code change, create a GitHub issue with details\n",
+        "handoffDescription": "Recommends remediation actions based on investigation findings: restart, scale, rollback, or config changes.",
+        "handoffs": [],
+        "tools": [
+          "RunAzCliReadCommands",
+          "RunAzCliWriteCommands",
+          "QueryAppInsightsUsingAppId",
+          "SearchMemory"
+        ],
+        "agentType": "Autonomous",
+        "temperature": 0.2,
+        "enableSkills": true,
+        "allowedSkills": [
+          "triage-app-errors"
+        ]
+      }
+    }
+  ],
+  "tools": [],
+  "pluginConfigs": [],
+  "httpTriggers": [],
+  "knowledge": [],
+  "knowledgeItems": [],
+  "synthesizedKnowledge": [],
+  "synthesizedKnowledgeDir": "",
+  "repoInstructions": [],
+  "toolPermissions": {},
+  "connectorV2": [],
+  "plugins": {
+    "marketplaces": [],
+    "installations": []
+  },
+  "connectors": []
+}

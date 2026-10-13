@@ -1,0 +1,5 @@
+name: github-repo
+spec:
+  url: "https://github.com/KrishnaDistributedcomputing/sre-agents"
+  branch: main
+  description: Connected GitHub repository

@@ -1,0 +1,50 @@
+{
+  "_description": "Expected configuration for pagerduty recipe. Used by verify-agent.sh to validate deployments.",
+  "_scenario": "pagerduty-law-vmcosmos",
+  "agent": {
+    "accessLevel": "Low",
+    "actionMode": "Review",
+    "upgradeChannel": "Preview",
+    "defaultModelProvider": "Anthropic",
+    "incidentPlatform": "PagerDuty"
+  },
+  "connectors": [
+    {
+      "name": "log-analytics",
+      "type": "LogAnalytics"
+    },
+    {
+      "name": "incident-report-template-md",
+      "type": "KnowledgeSource"
+    },
+    {
+      "name": "vm-cosmosdb-architecture-md",
+      "type": "KnowledgeSource"
+    },
+    {
+      "name": "http-500-errors-md",
+      "type": "KnowledgeSource"
+    }
+  ],
+  "skills": [
+    "investigate-vm-issues",
+    "investigate-cosmosdb",
+    "investigate-http-errors"
+  ],
+  "subagents": [],
+  "hooks": [
+    "deny-prod-deletes",
+    "vm-remediation-approval"
+  ],
+  "commonPrompts": [
+    "safety-rules"
+  ],
+  "scheduledTasks": [],
+  "responsePlans": [
+    {
+      "name": "pd-p1p2",
+      "handlingAgent": ""
+    }
+  ],
+  "repos": []
+}
