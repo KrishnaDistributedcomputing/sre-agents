@@ -192,7 +192,28 @@ az rest --method get --url $url `
 Open [Azure SRE Agent](https://sre.azure.com/) and select `sre-agents` to test
 an investigation.
 
-## 7. Publish updates
+## 7. Configure workload logs
+
+Enable every supported log and metric category in the monitored resource group:
+
+```powershell
+.\scripts\Enable-DiagnosticSettings.ps1 `
+  -Subscription fa4864b4-3710-453c-bffe-2c22a80cd0f9 `
+  -ResourceGroup rg-sre-agent-showcase-centralus `
+  -WorkspaceResourceId /subscriptions/fa4864b4-3710-453c-bffe-2c22a80cd0f9/resourceGroups/rg-sre-agent-showcase-centralus/providers/Microsoft.OperationalInsights/workspaces/log-sre-demowus2
+```
+
+The script discovers supported categories and creates an idempotent diagnostic
+setting named `sre-agent-observability`. It configures Container Registry logs,
+managed-environment console, system, and HTTP logs, Application Insights
+telemetry, and supported platform metrics. It excludes the destination Log
+Analytics workspace to prevent a logging loop.
+
+> [!IMPORTANT]
+> Enabling every supported category can increase Log Analytics ingestion and
+> retention costs. Review workspace usage after deployment.
+
+## 8. Publish updates
 
 Push reviewed configuration changes to GitHub:
 
@@ -204,7 +225,7 @@ git push origin main
 
 Never commit access tokens, connector credentials, or generated secret files.
 
-## 8. Remove the deployment
+## 9. Remove the deployment
 
 > [!CAUTION]
 > This deletes the SRE Agent resource group and every resource created inside
